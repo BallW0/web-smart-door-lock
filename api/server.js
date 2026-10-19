@@ -7,16 +7,25 @@ const express    = require('express');
 const cors       = require('cors');
 const bodyParser = require('body-parser');
 const morgan     = require('morgan');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getDatabase }         = require('firebase-admin/database');
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getDatabase }                  = require('firebase-admin/database');
 
+// Format private key properly for Vercel / environment variables
+const formatPrivateKey = (key) => {
+  if (!key) return '';
+  let formatted = key.trim();
+  if (formatted.startsWith('"') && formatted.endsWith('"')) {
+    formatted = formatted.slice(1, -1);
+  }
+  return formatted.replace(/\\n/g, '\n');
+};
 
 // Build service account from environment variables (no JSON file needed)
 const serviceAccount = {
   type:                        process.env.FIREBASE_TYPE            || 'service_account',
   project_id:                  process.env.FIREBASE_PROJECT_ID,
   private_key_id:              process.env.FIREBASE_PRIVATE_KEY_ID,
-  private_key:                 (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+  private_key:                 formatPrivateKey(process.env.FIREBASE_PRIVATE_KEY),
   client_email:                process.env.FIREBASE_CLIENT_EMAIL,
   client_id:                   process.env.FIREBASE_CLIENT_ID,
   auth_uri:                    process.env.FIREBASE_AUTH_URI         || 'https://accounts.google.com/o/oauth2/auth',
@@ -26,16 +35,18 @@ const serviceAccount = {
   universe_domain:             process.env.FIREBASE_UNIVERSE_DOMAIN  || 'googleapis.com',
 };
 
-initializeApp({
-  credential:  cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
-});
+if (!getApps().length) {
+  initializeApp({
+    credential:  cert(serviceAccount),
+    databaseURL: process.env.FIREBASE_DATABASE_URL,
+  });
+}
 
 const db = getDatabase();
-
 module.exports.db = db;
 
 const app = express();
+app.db = db;
 
 app.use(cors({ origin: '*' }));
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -143,8 +154,13 @@ app.use((err, req, res, _next) => {
 
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n  Smart Door Lock API Server`);
-  console.log(`    Listening at: http://localhost:${PORT}`);
-  console.log(`    Firebase project: sistem-pintu-otomatis\n`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n  Smart Door Lock API Server`);
+    console.log(`    Listening at: http://localhost:${PORT}`);
+    console.log(`    Firebase project: sistem-pintu-otomatis\n`);
+  });
+}
+
+module.exports = app;
+module.exports.db = db;

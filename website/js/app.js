@@ -1,4 +1,8 @@
-const API_BASE = 'http://localhost:3000/api';
+// Dynamic API base: uses '/api' on production (Vercel) & local Express (port 3000),
+// or falls back to http://localhost:3000/api if opened via Live Server or file://
+const API_BASE = (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '3000'))
+    ? 'http://localhost:3000/api'
+    : '/api';
 
 let state = {
     logs: [],

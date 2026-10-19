@@ -11,6 +11,7 @@ api/.env
 firebase-key.json
 *.pem
 *.key
+.vercel
 
 # ===============================================
 # OS & Editor
