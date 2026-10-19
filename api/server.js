@@ -1,5 +1,6 @@
 'use strict';
 
+const fs      = require('fs');
 const path    = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -53,11 +54,14 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
 
-app.use(express.static(path.join(__dirname, '../website')));
+const publicPath = fs.existsSync(path.join(__dirname, '../public'))
+  ? path.join(__dirname, '../public')
+  : path.join(__dirname, '../website');
+app.use(express.static(publicPath));
 
-const logsRoutes        = require('./routes/logs');
-const systemRoutes      = require('./routes/system');
-const facesRoutes       = require('./routes/faces');
+const logsRoutes        = require('./_routes/logs');
+const systemRoutes      = require('./_routes/system');
+const facesRoutes       = require('./_routes/faces');
 
 app.use('/api/logs',        logsRoutes);
 app.use('/api/system',      systemRoutes);
